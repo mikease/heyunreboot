@@ -2,7 +2,7 @@ name: ZJMF Server Monitor
 
 on:
   schedule:
-    # 北京时间每天 04:07，cron 使用 UTC 时间
+    # 北京时间每天 04:07（UTC 前一天 20:07）
     - cron: "7 20 * * *"
   workflow_dispatch:
 
@@ -20,34 +20,54 @@ jobs:
 
     env:
       TZ: Asia/Shanghai
+      PYTHONUNBUFFERED: "1"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
 
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: python -m pip install "requests>=2.31,<3"
 
       - name: Create secure configuration
         env:
           SERVERS_JSON: ${{ secrets.SERVERS_JSON }}
         run: |
-          python -c "import os,pathlib; pathlib.Path('servers.json').write_text(os.environ['SERVERS_JSON'], encoding='utf-8')"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          config = os.environ.get("SERVERS_JSON", "").strip()
+          if not config:
+              raise SystemExit(
+                  "SERVERS_JSON Secret 未配置或内容为空"
+              )
+
+          Path("servers.json").write_text(
+              config,
+              encoding="utf-8"
+          )
+          print("servers.json 已安全生成")
+          PY
 
       - name: Monitor for 15 minutes
         shell: bash
         run: |
           set +e
+
           timeout --foreground --signal=INT 15m \
-            python -u server_monitor.py --interval 60
+            python server_monitor.py --interval 60
+
           code=$?
 
           if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            echo "监控程序异常退出，状态码：$code"
             exit "$code"
           fi
+
+          echo "本次监控任务完成"
