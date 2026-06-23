@@ -1,0 +1,24 @@
+{
+  "providers": [
+    {
+      "name": "heyunidc",
+      "display_name": "核云",
+      "api_base_url": "https://www.heyunidc.cn/v1",
+      "api_account": "登录邮箱或者手机号码",
+      "api_password": "api密钥"
+    }
+  ],
+  "servers": [],
+  "global_settings": {
+    "check_interval": 60,
+    "suspect_threshold": 2,
+    "reboot_cooldown": 300,
+    "recover_timeout": 300,
+    "recover_check_interval": 60,
+    "api_timeout": 60,
+    "default_daily_reboot_limit": 3,
+    "webhook_url": "",
+    "webhook_type": "custom",
+    "log_level": "INFO"
+  }
+}
